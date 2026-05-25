@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Add Restaurant — TasteMap{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    <h1 style="margin-bottom:2rem">Add a restaurant</h1>
+
+    <form method="post" enctype="multipart/form-data" novalidate>
+        <div class="form-card">
+            <h2>Basic info</h2>
+            <div class="form-group">
+                <label for="name">Name *</label>
+                <input type="text" id="name" name="name" required value="{{ form.get('name', '') }}">
+            </div>
+            <div class="form-group">
+                <label for="area">Area *</label>
+                <input type="text" id="area" name="area" required
+                       value="{{ form.get('area', '') }}" placeholder="e.g. Downtown Kingston">
+            </div>
+            <div class="form-group">
+                <label for="description">Short description</label>
+                <textarea id="description" name="description" rows="2"
+                          placeholder="What makes this place special?">{{ form.get('description', '') }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="service_type">Service type *</label>
+                <select id="service_type" name="service_type" required>
+                    <option value="">Select…</option>
+                    {% for st in service_types %}
+                    <option value="{{ st }}" {% if form.get('service_type') == st %}selected{% endif %}>{{ st|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="cover_image">Cover photo (optional)</label>
+                <input type="file" id="cover_image" name="cover_image" accept="image/*"
+                       data-image-preview="cover-preview">
+                <div id="cover-preview" class="image-preview hidden"></div>
+            </div>
+        </div>
+
+        <div class="form-card">
+            <h2>Food types *</h2>
+            <div class="checkbox-grid">
+                {% for ft in food_types %}
+                <label>
+                    <input type="checkbox" name="food_types" value="{{ ft }}"
+                           {% if ft in form.getlist('food_types') %}checked{% endif %}>
+                    {{ ft }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="form-card">
+            <h2>Best suited for *</h2>
+            <div class="checkbox-grid">
+                {% for o in occasions %}
+                <label>
+                    <input type="checkbox" name="occasions" value="{{ o }}"
+                           {% if o in form.getlist('occasions') %}checked{% endif %}>
+                    {{ o }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="form-card">
+            <h2>Dining options *</h2>
+            <div class="checkbox-grid">
+                {% for d in dining_options %}
+                <label>
+                    <input type="checkbox" name="dining_options" value="{{ d }}"
+                           {% if d in form.getlist('dining_options') %}checked{% endif %}>
+                    {{ d }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="form-card">
+            <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer">
+                <input type="checkbox" name="allergy_info_available"
+                       {% if form.get('allergy_info_available') == 'on' %}checked{% endif %}>
+                Allergy information provided
+            </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Add restaurant</button>
+        <a href="{{ url_for('main.index') }}" class="btn btn-ghost" style="margin-left:0.5rem">Cancel</a>
+    </form>
+</div>
+{% endblock %}

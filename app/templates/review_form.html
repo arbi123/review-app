@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Review {{ restaurant.name }} — TasteMap{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    <h1 style="margin-bottom:0.25rem">Review {{ restaurant.name }}</h1>
+    <p style="color:var(--muted);margin-bottom:2rem">{{ restaurant.area }}</p>
+
+    <form method="post" enctype="multipart/form-data" novalidate>
+        <div class="form-card">
+            <h2>Reviewer</h2>
+            <div class="form-group">
+                <label for="reviewer_name">Your name (optional)</label>
+                <input type="text" id="reviewer_name" name="reviewer_name"
+                       value="{{ form.get('reviewer_name', '') }}">
+            </div>
+            <div class="form-group">
+                <label for="photo">Photo (optional)</label>
+                <input type="file" id="photo" name="photo" accept="image/*"
+                       data-image-preview="photo-preview">
+                <div id="photo-preview" class="image-preview hidden"></div>
+            </div>
+        </div>
+
+        <div class="form-card">
+            <h2>Expense</h2>
+            <div class="form-group">
+                <label for="avg_expense_per_head">Average expense per head ($) *</label>
+                <input type="number" step="0.01" min="0.01" id="avg_expense_per_head"
+                       name="avg_expense_per_head" required
+                       value="{{ form.get('avg_expense_per_head', '') }}">
+            </div>
+        </div>
+
+        <div class="form-card">
+            <h2>Quality ratings (1–5) *</h2>
+            <div class="form-row">
+                {% set score_fields = [
+                    ('food_quality', 'Food quality'),
+                    ('ambiance', 'Ambiance'),
+                    ('service_quality', 'Service quality'),
+                    ('cleanliness', 'Cleanliness'),
+                    ('speed_of_service', 'Speed of service'),
+                    ('value_for_money', 'Value for money'),
+                ] %}
+                {% for name, label in score_fields %}
+                <div class="form-group">
+                    <label for="{{ name }}">{{ label }}</label>
+                    <select id="{{ name }}" name="{{ name }}" required>
+                        <option value="">—</option>
+                        {% for i in range(1, 6) %}
+                        <option value="{{ i }}" {% if form.get(name) == i|string %}selected{% endif %}>{{ i }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="form-card">
+            <h2>Overall rating *</h2>
+            <div class="radio-group">
+                {% for rating in overall_ratings %}
+                <label>
+                    <input type="radio" name="overall_rating" value="{{ rating }}"
+                           {% if form.get('overall_rating') == rating %}checked{% endif %} required>
+                    {{ rating|title }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="form-card">
+            <h2>Written report (max 100 words) *</h2>
+            <div class="form-group">
+                <label for="report">Your review</label>
+                <textarea id="report" name="report" rows="5" required>{{ form.get('report', '') }}</textarea>
+                <p class="word-count"><span id="word-count">0</span> / 100 words</p>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Submit review</button>
+        <a href="{{ url_for('main.restaurant_detail', restaurant_id=restaurant.id) }}" class="btn btn-ghost" style="margin-left:0.5rem">Cancel</a>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Browse Restaurants — TasteMap{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1>Discover local restaurants</h1>
+    <p>Filter by area and cuisine, compare ratings, and share your experience with photos.</p>
+    <div class="stats-row">
+        <div class="stat">
+            <strong>{{ restaurants|length }}</strong>
+            <span>Restaurants{% if selected_area %} in {{ selected_area }}{% endif %}</span>
+        </div>
+        <div class="stat">
+            <strong>{{ total_reviews }}</strong>
+            <span>Total reviews</span>
+        </div>
+    </div>
+</section>
+
+<form method="get" class="filters">
+    <div>
+        <label for="q">Search</label>
+        <input type="search" id="q" name="q" placeholder="Name or area…" value="{{ search_query }}">
+    </div>
+    <div>
+        <label for="area">Area</label>
+        <select id="area" name="area">
+            <option value="">All areas</option>
+            {% for a in areas %}
+            <option value="{{ a }}" {% if a == selected_area %}selected{% endif %}>{{ a }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label for="food_type">Cuisine</label>
+        <select id="food_type" name="food_type">
+            <option value="">All cuisines</option>
+            {% for ft in food_types %}
+            <option value="{{ ft }}" {% if ft == selected_food %}selected{% endif %}>{{ ft }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label for="sort">Sort by</label>
+        <select id="sort" name="sort">
+            <option value="name" {% if selected_sort == 'name' %}selected{% endif %}>Name</option>
+            <option value="rating" {% if selected_sort == 'rating' %}selected{% endif %}>Highest rated</option>
+            <option value="reviews" {% if selected_sort == 'reviews' %}selected{% endif %}>Most reviews</option>
+        </select>
+    </div>
+    <div>
+        <button type="submit" class="btn btn-primary" style="width:100%">Apply filters</button>
+    </div>
+</form>
+
+{% if restaurants %}
+<div class="grid">
+    {% for r in restaurants %}
+    <article class="card">
+        <a href="{{ url_for('main.restaurant_detail', restaurant_id=r.id) }}">
+            <img class="card-img"
+                 src="{{ resolve_image(r.cover_image, restaurant_fallback_image(r)) }}"
+                 alt="{{ r.name }}"
+                 loading="lazy"
+                 referrerpolicy="no-referrer"
+                 onerror="this.onerror=null;this.src='{{ restaurant_fallback_image(r) }}';">
+        </a>
+        <div class="card-body">
+            <h3><a href="{{ url_for('main.restaurant_detail', restaurant_id=r.id) }}" style="color:inherit">{{ r.name }}</a></h3>
+            <p class="card-meta">{{ r.area }} · {{ r.service_type|title }}</p>
+            {% if r.description %}
+            <p style="font-size:0.85rem;color:var(--muted);margin:0 0 0.75rem">{{ r.description[:90] }}{% if r.description|length > 90 %}…{% endif %}</p>
+            {% endif %}
+            <div class="badges">
+                {% for ft in r.get_food_types()[:3] %}
+                <span class="badge badge-accent">{{ ft }}</span>
+                {% endfor %}
+                {% if r.allergy_info_available %}
+                <span class="badge">Allergy info</span>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <div>
+                    {% if r._avg_score %}
+                    <span class="stars">{{ stars_html(r._avg_score) }}</span>
+                    <span class="rating-num">{{ '%.1f'|format(r._avg_score) }}</span>
+                    {% else %}
+                    <span class="card-meta">No reviews yet</span>
+                    {% endif %}
+                </div>
+                <span class="badge">{{ r.review_count }} review{{ 's' if r.review_count != 1 else '' }}</span>
+            </div>
+        </div>
+    </article>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty">
+    <p>No restaurants match your filters.</p>
+    <a href="{{ url_for('main.add_restaurant') }}" class="btn btn-primary" style="margin-top:1rem">Add the first one</a>
+</div>
+{% endif %}
+{% endblock %}

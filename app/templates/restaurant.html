@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}{{ restaurant.name }} — TasteMap{% endblock %}
+
+{% block content %}
+<div class="detail-hero">
+    <img src="{{ resolve_image(restaurant.cover_image, restaurant_fallback_image(restaurant)) }}"
+         alt="{{ restaurant.name }}"
+         referrerpolicy="no-referrer"
+         onerror="this.onerror=null;this.src='{{ restaurant_fallback_image(restaurant) }}';">
+    <div class="detail-hero-overlay">
+        <p class="area">{{ restaurant.area }} · {{ restaurant.service_type|title }}</p>
+        <h1>{{ restaurant.name }}</h1>
+        {% if restaurant.description %}
+        <p style="max-width:600px;margin-top:0.5rem;color:var(--muted)">{{ restaurant.description }}</p>
+        {% endif %}
+    </div>
+</div>
+
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem">
+    <div class="stats-row" style="margin:0;justify-content:flex-start">
+        {% if avg_score %}
+        <div class="stat">
+            <strong>{{ '%.1f'|format(avg_score) }}</strong>
+            <span class="stars">{{ stars_html(avg_score) }} average</span>
+        </div>
+        {% endif %}
+        {% if avg_expense %}
+        <div class="stat">
+            <strong>${{ '%.0f'|format(avg_expense) }}</strong>
+            <span>avg per head</span>
+        </div>
+        {% endif %}
+        <div class="stat">
+            <strong>{{ reviews|length }}</strong>
+            <span>reviews</span>
+        </div>
+    </div>
+    <a href="{{ url_for('main.add_review', restaurant_id=restaurant.id) }}" class="btn btn-primary">Write a review</a>
+</div>
+
+<div class="info-grid">
+    <div class="info-box">
+        <strong>Food types</strong>
+        <div class="badges">
+            {% for ft in restaurant.get_food_types() %}
+            <span class="badge badge-accent">{{ ft }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="info-box">
+        <strong>Best for</strong>
+        <div class="badges">
+            {% for o in restaurant.get_occasions() %}
+            <span class="badge">{{ o }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="info-box">
+        <strong>Dining options</strong>
+        <div class="badges">
+            {% for d in restaurant.get_dining_options() %}
+            <span class="badge">{{ d }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="info-box">
+        <strong>Allergy information</strong>
+        {% if restaurant.allergy_info_available %}
+        <span class="badge badge-accent">Provided on request</span>
+        {% else %}
+        <span class="badge">Not advertised</span>
+        {% endif %}
+    </div>
+</div>
+
+<h2 style="margin-bottom:1rem;font-size:1.25rem">Reviews</h2>
+
+{% if reviews %}
+<div class="reviews-grid">
+    {% for review in reviews %}
+    <article class="review-card">
+        {% if review.photo %}
+        <img src="{{ resolve_image(review.photo, restaurant_fallback_image(restaurant)) }}"
+             alt="Review photo by {{ review.reviewer_name or 'Anonymous' }}"
+             referrerpolicy="no-referrer"
+             onerror="this.onerror=null;this.src='{{ restaurant_fallback_image(restaurant) }}';">
+        {% else %}
+        <img src="{{ resolve_image(restaurant.cover_image, restaurant_fallback_image(restaurant)) }}"
+             alt="Restaurant" style="opacity:0.6" referrerpolicy="no-referrer">
+        {% endif %}
+        <div class="review-body">
+            <div class="review-header">
+                <div>
+                    <strong>{{ review.reviewer_name or 'Anonymous' }}</strong>
+                    <p style="margin:0.25rem 0 0;font-size:0.8rem;color:var(--muted)">
+                        {{ review.created_at.strftime('%d %b %Y') }} · ${{ '%.2f'|format(review.avg_expense_per_head) }}/head
+                    </p>
+                </div>
+                <span class="badge-{{ review.overall_rating|replace(' ', '-') }}">{{ review.overall_rating|title }}</span>
+            </div>
+            <div class="stars">{{ stars_html(review.average_score) }} <span class="rating-num">{{ '%.1f'|format(review.average_score) }}</span></div>
+            <div class="score-pills">
+                {% for key, label in SCORE_LABELS %}
+                <span class="score-pill">{{ label }} <b>{{ review|getattr(key) }}/5</b></span>
+                {% endfor %}
+            </div>
+            <p style="margin:0;line-height:1.6">{{ review.report }}</p>
+        </div>
+    </article>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty">
+    <p>No reviews yet. Be the first to share your experience.</p>
+    <a href="{{ url_for('main.add_review', restaurant_id=restaurant.id) }}" class="btn btn-primary" style="margin-top:1rem">Write a review</a>
+</div>
+{% endif %}
+{% endblock %}
