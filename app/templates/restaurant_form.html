@@ -2,92 +2,155 @@
 {% block title %}Add Restaurant — TasteMap{% endblock %}
 
 {% block content %}
-<div class="form-page">
-    <h1 style="margin-bottom:2rem">Add a restaurant</h1>
+<div class="form-page form-page--wide">
+    <header class="form-page-header">
+        <p class="form-page-eyebrow">New listing</p>
+        <h1>Add a restaurant</h1>
+        <p class="form-page-lead">Share the basics, then tag cuisine, vibe, and when people usually visit.</p>
+    </header>
 
-    <form method="post" enctype="multipart/form-data" novalidate>
+    <form method="post" enctype="multipart/form-data" novalidate class="restaurant-form">
         <div class="form-card">
-            <h2>Basic info</h2>
-            <div class="form-group">
-                <label for="name">Name *</label>
-                <input type="text" id="name" name="name" required value="{{ form.get('name', '') }}">
+            <div class="form-card-head">
+                <span class="form-card-icon" aria-hidden="true">📍</span>
+                <div>
+                    <h2>Basic info</h2>
+                    <p class="form-card-desc">Name, location, and how the place serves guests.</p>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="area">Area *</label>
-                <input type="text" id="area" name="area" required
-                       value="{{ form.get('area', '') }}" placeholder="e.g. Downtown Kingston">
+            <div class="form-row form-row--2">
+                <div class="form-group">
+                    <label for="name">Restaurant name <span class="required">*</span></label>
+                    <input type="text" id="name" name="name" required value="{{ form.get('name', '') }}"
+                           placeholder="e.g. Harbour Grill">
+                </div>
+                <div class="form-group">
+                    <label for="area">Area <span class="required">*</span></label>
+                    <input type="text" id="area" name="area" required
+                           value="{{ form.get('area', '') }}" placeholder="e.g. Downtown Kingston">
+                </div>
             </div>
             <div class="form-group">
                 <label for="description">Short description</label>
-                <textarea id="description" name="description" rows="2"
+                <textarea id="description" name="description" rows="3"
                           placeholder="What makes this place special?">{{ form.get('description', '') }}</textarea>
             </div>
             <div class="form-group">
-                <label for="service_type">Service type *</label>
-                <select id="service_type" name="service_type" required>
-                    <option value="">Select…</option>
+                <span class="form-label">Service type <span class="required">*</span></span>
+                <div class="chip-group chip-group--single" role="group" aria-label="Service type">
                     {% for st in service_types %}
-                    <option value="{{ st }}" {% if form.get('service_type') == st %}selected{% endif %}>{{ st|title }}</option>
+                    <label class="chip">
+                        <input type="radio" name="service_type" value="{{ st }}" required
+                               {% if form.get('service_type') == st %}checked{% endif %}>
+                        <span>{{ st|title }}</span>
+                    </label>
                     {% endfor %}
-                </select>
+                </div>
             </div>
             <div class="form-group">
-                <label for="cover_image">Cover photo (optional)</label>
-                <input type="file" id="cover_image" name="cover_image" accept="image/*"
-                       data-image-preview="cover-preview">
+                <span class="form-label">Cover photo</span>
+                <label class="file-upload" for="cover_image">
+                    <input type="file" id="cover_image" name="cover_image" accept="image/*"
+                           data-image-preview="cover-preview">
+                    <span class="file-upload-icon" aria-hidden="true">📷</span>
+                    <span class="file-upload-text">
+                        <strong>Click to upload</strong> or drag an image here
+                    </span>
+                    <span class="file-upload-hint">JPG, PNG · optional</span>
+                </label>
                 <div id="cover-preview" class="image-preview hidden"></div>
             </div>
         </div>
 
+        {% set food_icons = {
+            'Asian': '🥢', 'Caribbean': '🌴', 'Oriental': '🍜', 'Italian': '🍝',
+            'American': '🍔', 'Traditional': '🍲', 'Other': '✨'
+        } %}
         <div class="form-card">
-            <h2>Food types *</h2>
-            <div class="checkbox-grid">
+            <div class="form-card-head">
+                <span class="form-card-icon" aria-hidden="true">🍽️</span>
+                <div>
+                    <h2>Food types</h2>
+                    <p class="form-card-desc">Pick every cuisine that fits. <span class="required">*</span></p>
+                </div>
+            </div>
+            <div class="chip-group" role="group" aria-label="Food types">
                 {% for ft in food_types %}
-                <label>
+                <label class="chip chip--lg">
                     <input type="checkbox" name="food_types" value="{{ ft }}"
                            {% if ft in form.getlist('food_types') %}checked{% endif %}>
-                    {{ ft }}
+                    <span class="chip-emoji" aria-hidden="true">{{ food_icons.get(ft, '🍴') }}</span>
+                    <span>{{ ft }}</span>
                 </label>
                 {% endfor %}
             </div>
         </div>
 
+        {% set occasion_icons = {
+            'Family meal': '👨‍👩‍👧', 'Kids meals': '🧒', 'Business lunch': '💼',
+            'View/scenic': '🌅', 'Date night': '💕', 'Celebration': '🎉', 'Casual': '☕'
+        } %}
         <div class="form-card">
-            <h2>Best suited for *</h2>
-            <div class="checkbox-grid">
+            <div class="form-card-head">
+                <span class="form-card-icon" aria-hidden="true">✨</span>
+                <div>
+                    <h2>Best suited for</h2>
+                    <p class="form-card-desc">When do people love coming here? <span class="required">*</span></p>
+                </div>
+            </div>
+            <div class="chip-group" role="group" aria-label="Occasions">
                 {% for o in occasions %}
-                <label>
+                <label class="chip chip--lg">
                     <input type="checkbox" name="occasions" value="{{ o }}"
                            {% if o in form.getlist('occasions') %}checked{% endif %}>
-                    {{ o }}
+                    <span class="chip-emoji" aria-hidden="true">{{ occasion_icons.get(o, '•') }}</span>
+                    <span>{{ o }}</span>
                 </label>
                 {% endfor %}
             </div>
         </div>
 
+        {% set dining_icons = {
+            'Breakfast': '🌅', 'Lunch': '☀️', 'Dinner': '🌙', 'Supper': '🍽️', 'Take-out': '🥡'
+        } %}
         <div class="form-card">
-            <h2>Dining options *</h2>
-            <div class="checkbox-grid">
+            <div class="form-card-head">
+                <span class="form-card-icon" aria-hidden="true">🕐</span>
+                <div>
+                    <h2>Dining options</h2>
+                    <p class="form-card-desc">Meals and formats you can get. <span class="required">*</span></p>
+                </div>
+            </div>
+            <div class="chip-group" role="group" aria-label="Dining options">
                 {% for d in dining_options %}
-                <label>
+                <label class="chip chip--lg">
                     <input type="checkbox" name="dining_options" value="{{ d }}"
                            {% if d in form.getlist('dining_options') %}checked{% endif %}>
-                    {{ d }}
+                    <span class="chip-emoji" aria-hidden="true">{{ dining_icons.get(d, '•') }}</span>
+                    <span>{{ d }}</span>
                 </label>
                 {% endfor %}
             </div>
         </div>
 
-        <div class="form-card">
-            <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer">
-                <input type="checkbox" name="allergy_info_available"
-                       {% if form.get('allergy_info_available') == 'on' %}checked{% endif %}>
-                Allergy information provided
+        <div class="form-card form-card--toggle">
+            <label class="toggle-row" for="allergy_info_available">
+                <span class="toggle-copy">
+                    <strong>Allergy information available</strong>
+                    <span>Staff can answer questions about allergens and ingredients.</span>
+                </span>
+                <span class="toggle-switch">
+                    <input type="checkbox" id="allergy_info_available" name="allergy_info_available"
+                           {% if form.get('allergy_info_available') == 'on' %}checked{% endif %}>
+                    <span class="toggle-track" aria-hidden="true"></span>
+                </span>
             </label>
         </div>
 
-        <button type="submit" class="btn btn-primary">Add restaurant</button>
-        <a href="{{ url_for('main.index') }}" class="btn btn-ghost" style="margin-left:0.5rem">Cancel</a>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-lg">Add restaurant</button>
+            <a href="{{ url_for('main.index') }}" class="btn btn-ghost btn-lg">Cancel</a>
+        </div>
     </form>
 </div>
 {% endblock %}

@@ -15,13 +15,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const previewId = input.getAttribute("data-image-preview");
     const preview = document.getElementById(previewId);
     if (!preview) return;
+    const uploadLabel = input.closest(".file-upload");
+    const uploadText = uploadLabel?.querySelector(".file-upload-text strong");
     input.addEventListener("change", () => {
       const file = input.files[0];
       if (!file) {
         preview.innerHTML = "";
         preview.classList.add("hidden");
+        if (uploadText) uploadText.textContent = "Click to upload";
         return;
       }
+      if (uploadText) uploadText.textContent = file.name;
       const reader = new FileReader();
       reader.onload = (e) => {
         preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
