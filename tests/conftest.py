@@ -10,6 +10,7 @@ def app():
         {
             "TESTING": True,
             "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
+            "SQLALCHEMY_BINDS": {"analytics": "sqlite:///:memory:"},
             "SECRET_KEY": "test-secret",
         }
     )

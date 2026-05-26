@@ -2,7 +2,9 @@ import logging
 
 from flask import (
     Blueprint,
+    current_app,
     flash,
+    make_response,
     redirect,
     render_template,
     request,
@@ -12,6 +14,7 @@ from sqlalchemy import func
 from werkzeug.datastructures import ImmutableMultiDict
 
 from app import db
+from app.background_stats import get_cached_stats, schedule_stats_refresh
 from app.constants import (
     DINING_OPTIONS,
     FOOD_TYPES,
@@ -19,8 +22,15 @@ from app.constants import (
     OVERALL_RATINGS,
     SERVICE_TYPES,
 )
+from app.exceptions import DatabaseError, UploadError
 from app.helpers import restaurant_average_expense, restaurant_average_score
+from app.http_cookies import (
+    apply_browse_preferences,
+    filters_explicitly_submitted,
+    remember_browse_preferences,
+)
 from app.models import Restaurant, Review
+from app.secondary_db import record_page_visit
 from app.uploads import save_upload, validate_image_upload
 from app.validation import validate_review, validate_restaurant
 
@@ -37,10 +47,13 @@ def _enrich_restaurants(restaurants):
 
 @bp.route("/")
 def index():
+    # SE — HTTP: read query string; SE — Cookies: restore browse prefs when params omitted.
     area = request.args.get("area", "").strip()
     q = request.args.get("q", "").strip()
     food_type = request.args.get("food_type", "").strip()
     sort = request.args.get("sort", "name")
+    area, sort, food_type = apply_browse_preferences(request, area, sort, food_type)
+    save_filter_cookies = filters_explicitly_submitted(request)
 
     query = Restaurant.query
 
@@ -93,16 +106,33 @@ def index():
         total_reviews,
     )
 
-    return render_template(
-        "index.html",
-        restaurants=restaurants,
-        areas=areas,
-        food_types=FOOD_TYPES,
-        selected_area=area,
-        search_query=q,
-        selected_food=food_type,
-        selected_sort=sort,
-        total_reviews=total_reviews,
+    # SE — Multi-threading: refresh counters off the request thread.
+    schedule_stats_refresh(current_app._get_current_object())
+    cached_stats = get_cached_stats()
+
+    # SE — Multi-database (optional): log visit to analytics bind.
+    try:
+        record_page_visit(request.path)
+    except Exception as exc:
+        logger.debug("Analytics DB skipped: %s", exc)
+
+    response = make_response(
+        render_template(
+            "index.html",
+            restaurants=restaurants,
+            areas=areas,
+            food_types=FOOD_TYPES,
+            selected_area=area,
+            search_query=q,
+            selected_food=food_type,
+            selected_sort=sort,
+            total_reviews=total_reviews,
+            cached_stats=cached_stats,
+        )
+    )
+    # SE — HTTP cookies: persist sort, area, and cuisine on the response.
+    return remember_browse_preferences(
+        response, area, sort, food_type, save=save_filter_cookies
     )
 
 
@@ -144,9 +174,10 @@ def add_review(restaurant_id):
     restaurant = db.get_or_404(Restaurant, restaurant_id)
     if request.method == "POST":
         cleaned, errors = validate_review(request.form)
-        img_err = validate_image_upload(request.files.get("photo"))
-        if img_err:
-            errors.append(img_err)
+        try:
+            validate_image_upload(request.files.get("photo"))
+        except UploadError as exc:
+            errors.append(str(exc))
         if errors:
             logger.warning(
                 "Review rejected for '%s' (id=%d): %s",
@@ -168,8 +199,12 @@ def add_review(restaurant_id):
             photo=photo_path,
             **cleaned,
         )
-        db.session.add(review)
-        db.session.commit()
+        try:
+            db.session.add(review)
+            db.session.commit()
+        except Exception as exc:
+            db.session.rollback()
+            raise DatabaseError("Could not save review.") from exc
         logger.info(
             "New review saved for '%s' by %s: overall=%s, expense=$%.2f, "
             "photo=%s, report length=%d words.",
@@ -196,9 +231,10 @@ def add_review(restaurant_id):
 def add_restaurant():
     if request.method == "POST":
         cleaned, errors = validate_restaurant(request.form)
-        img_err = validate_image_upload(request.files.get("cover_image"))
-        if img_err:
-            errors.append(img_err)
+        try:
+            validate_image_upload(request.files.get("cover_image"))
+        except UploadError as exc:
+            errors.append(str(exc))
         if errors:
             logger.warning("Restaurant add rejected: %s", "; ".join(errors))
             for err in errors:
@@ -223,8 +259,12 @@ def add_restaurant():
         restaurant.set_food_types(cleaned["food_types"])
         restaurant.set_occasions(cleaned["occasions"])
         restaurant.set_dining_options(cleaned["dining_options"])
-        db.session.add(restaurant)
-        db.session.commit()
+        try:
+            db.session.add(restaurant)
+            db.session.commit()
+        except Exception as exc:
+            db.session.rollback()
+            raise DatabaseError("Could not save restaurant.") from exc
         logger.info(
             "New restaurant added: '%s' in %s (%s). Cuisines: %s. Cover image: %s.",
             cleaned["name"],

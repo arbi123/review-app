@@ -5,6 +5,16 @@ from app import db
 from app.helpers import restaurant_average_score, review_score_average
 
 
+class TimestampMixin:
+    """SE — Inheritance (mixin): shared created_at column for concrete models."""
+
+    created_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+
 class Restaurant(db.Model):
     __tablename__ = "restaurants"
 
@@ -49,7 +59,9 @@ class Restaurant(db.Model):
         return restaurant_average_score(self)
 
 
-class Review(db.Model):
+class Review(TimestampMixin, db.Model):
+    """SE — Inheritance: Review inherits TimestampMixin.created_at."""
+
     __tablename__ = "reviews"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -67,11 +79,6 @@ class Review(db.Model):
     overall_rating = db.Column(db.String(20), nullable=False)
     report = db.Column(db.Text, nullable=False)
     photo = db.Column(db.String(500), nullable=True)
-    created_at = db.Column(
-        db.DateTime,
-        nullable=False,
-        default=lambda: datetime.now(timezone.utc),
-    )
 
     @property
     def average_score(self):

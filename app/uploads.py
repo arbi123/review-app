@@ -4,6 +4,8 @@ from pathlib import Path
 from flask import current_app
 from werkzeug.utils import secure_filename
 
+from app.exceptions import UploadError
+
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
 
 
@@ -27,8 +29,9 @@ def save_upload(file, subfolder: str) -> str | None:
 
 
 def validate_image_upload(file) -> str | None:
+    """SE — Exception usage: invalid uploads raise UploadError; routes catch and flash."""
     if not file or not file.filename:
         return None
     if not allowed_file(file.filename):
-        return "Image must be PNG, JPG, JPEG, GIF, or WEBP."
+        raise UploadError("Image must be PNG, JPG, JPEG, GIF, or WEBP.")
     return None
