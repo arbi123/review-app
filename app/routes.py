@@ -32,6 +32,7 @@ from app.http_cookies import (
 from app.models import Restaurant, Review
 from app.secondary_db import record_page_visit
 from app.uploads import save_upload, validate_image_upload
+from app.errors import error_response
 from app.validation import validate_review, validate_restaurant
 
 bp = Blueprint("main", __name__)
@@ -284,4 +285,27 @@ def add_restaurant():
         occasions=OCCASIONS,
         dining_options=DINING_OPTIONS,
         service_types=SERVICE_TYPES,
+    )
+
+
+@bp.route("/404")
+def page_not_found():
+    """Preview the 404 error page (same template as real 404 responses)."""
+    return error_response(
+        404,
+        "Page not found",
+        "We could not find that page. It may have moved or the link might be wrong.",
+        "🍽️",
+    )
+
+
+@bp.route("/500")
+def page_server_error():
+    """Preview the 500 error page (same template as real server errors)."""
+    return error_response(
+        500,
+        "Something went wrong",
+        "The server ran into a problem. Please try again in a moment.",
+        "⚠️",
+        detail="Our team has been notified (demo — button not wired).",
     )

@@ -90,6 +90,10 @@ def create_app(test_config=None):
     app.register_blueprint(bp)
     app.register_blueprint(servlet_bp)
 
+    from app.errors import register_error_handlers
+
+    register_error_handlers(app)
+
     with app.app_context():
         db.create_all()
         if not test_config:

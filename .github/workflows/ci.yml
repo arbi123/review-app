@@ -1,0 +1,63 @@
+# Manual CI — run from GitHub: Actions → CI → Run workflow
+# No schedule; trigger only via workflow_dispatch.
+
+name: CI
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Verify application loads
+        run: |
+          python -c "
+          from app import create_app
+          app = create_app({
+              'TESTING': True,
+              'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:',
+              'SQLALCHEMY_BINDS': {'analytics': 'sqlite:///:memory:'},
+              'SECRET_KEY': 'ci-secret',
+          })
+          with app.app_context():
+              print('TasteMap app created successfully')
+          "
+
+      - name: Run test suite
+        run: python -m pytest tests/ -v --tb=short
+
+      - name: Smoke test — run server and request pages
+        run: |
+          python -c "
+          from app import create_app
+          app = create_app({
+              'TESTING': True,
+              'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:',
+              'SQLALCHEMY_BINDS': {'analytics': 'sqlite:///:memory:'},
+              'SECRET_KEY': 'ci-secret',
+          })
+          app.run(host='127.0.0.1', port=5000, threaded=True, use_reloader=False)
+          " &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID 2>/dev/null || true' EXIT
+          sleep 3
+          curl -fsS http://127.0.0.1:5000/ -o /dev/null
+          curl -fsS http://127.0.0.1:5000/api/health -o /dev/null
+          echo "Server responded OK"

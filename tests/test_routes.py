@@ -84,6 +84,26 @@ def test_add_review_rejects_long_report(client, sample_restaurant, valid_review_
     assert Review.query.count() == 0
 
 
+def test_unknown_route_shows_404_page(client):
+    response = client.get("/this-page-does-not-exist")
+    assert response.status_code == 404
+    assert b"Page not found" in response.data
+    assert b"Go to home page" in response.data
+    assert b"Report the bug" in response.data
+
+
+def test_preview_404_route(client):
+    response = client.get("/404")
+    assert response.status_code == 404
+    assert b"Page not found" in response.data
+
+
+def test_preview_500_route(client):
+    response = client.get("/500")
+    assert response.status_code == 500
+    assert b"Something went wrong" in response.data
+
+
 def test_add_restaurant(client):
     response = client.post(
         "/restaurants/new",
