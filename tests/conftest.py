@@ -1,7 +1,38 @@
+import sys
+
 import pytest
 
 from app import create_app, db
 from app.models import Restaurant, Review
+
+
+def pytest_sessionstart(session):
+    """Visible in GitHub Actions when pytest runs with -s."""
+    print("\n" + "=" * 60, flush=True)
+    print("TasteMap - starting test session", flush=True)
+    print("=" * 60 + "\n", flush=True)
+
+
+def pytest_runtest_logstart(nodeid, location):
+    file_path, line_no, test_name = location
+    print(f"[TEST START] {test_name} ({file_path}:{line_no})", flush=True)
+    print(f"             nodeid: {nodeid}", flush=True)
+
+
+def pytest_runtest_logreport(report):
+    if report.when != "call":
+        return
+    label = report.outcome.upper()
+    print(f"[TEST {label}] {report.nodeid}", flush=True)
+    if report.outcome == "failed" and report.longrepr:
+        print(f"             reason: {report.longreprtext.splitlines()[0]}", flush=True)
+    sys.stdout.flush()
+
+
+def pytest_sessionfinish(session, exitstatus):
+    print("\n" + "=" * 60, flush=True)
+    print(f"TasteMap - test session finished (exit status {exitstatus})", flush=True)
+    print("=" * 60 + "\n", flush=True)
 
 
 @pytest.fixture

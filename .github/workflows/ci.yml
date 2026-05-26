@@ -41,7 +41,7 @@ jobs:
           "
 
       - name: Run test suite
-        run: python -m pytest tests/ -v --tb=short
+        run: python -m pytest tests/ -v -s --tb=short
 
       - name: Smoke test — run server and request pages
         run: |
